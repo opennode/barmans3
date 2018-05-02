@@ -1,0 +1,86 @@
+#!/bin/bash
+ 
+#
+# Executing barman base backup s3 sync tasks from queue
+# opennodecloud.com 2018
+#
+ 
+CONFFILE="/opt/barmans3/barmans3.conf"
+ 
+# check that CONFFILE exists and source it
+if [ -f $CONFFILE ]; then
+        source $CONFFILE
+else
+        echo "ERROR: CONFFILE ($CONFFILE) does not exist! Aborting."
+        exit 1
+fi
+ 
+# check that BASESYNC_QUEUE dir exists
+if [ -z "$BASESYNC_QUEUE" ] || [ ! -d $BASESYNC_QUEUE ]; then
+        echo "ERROR: BASESYNC_QUEUE ($BASESYNC_QUEUE) is not set or does not exist! Aborting."
+        exit 1
+fi
+ 
+SYNC_TASKS="$( find ${BASESYNC_QUEUE} -name '*.run' )"
+ 
+for TASK in $SYNC_TASKS; do
+ 
+        echo "INFO: Executing task: $TASK"
+ 
+        # source vars
+        source $TASK
+ 
+        # switch task to running state
+        mv $TASK ${BASESYNC_QUEUE}/$BARMAN_BACKUP_ID.running
+ 
+        # start process header
+cat << EOF
+ 
++-------------------------------------------------------
+START: $( date )
+WHOAMI: $( whoami )
+BARMAN_BACKUP_DIR: $BARMAN_BACKUP_DIR
+BARMAN_BACKUP_ID: $BARMAN_BACKUP_ID
+BARMAN_ERROR: $BARMAN_ERROR
+BARMAN_PHASE: $BARMAN_PHASE
+BARMAN_SERVER: $BARMAN_SERVER
+BARMAN_STATUS: $BARMAN_STATUS
+ 
+EOF
+        # execute sync task
+        if [ -z "$BARMAN_ERROR" ] && [ -n "$BARMAN_BACKUP_DIR" ] && [ -n "$BARMAN_BACKUP_ID" ] && \
+        [ -n "$BARMAN_SERVER" ] && [ "$BARMAN_PHASE" == "post" ] && [ "$BARMAN_STATUS" == "DONE" ]; then
+ 
+                aws --endpoint-url $S3_ENDPOINT_URI s3 sync \
+                ${BARMAN_BACKUP_DIR}/ ${S3_BUCKET_URI}/${BARMAN_SERVER}/base/${BARMAN_BACKUP_ID}/
+                exit_status=$?
+ 
+                if [ $exit_status -eq 0 ]; then
+                        # switch task to done state
+                        mv ${BASESYNC_QUEUE}/$BARMAN_BACKUP_ID.running ${BASESYNC_QUEUE}/$BARMAN_BACKUP_ID.done
+                else
+                        # switch task to error state
+                        mv ${BASESYNC_QUEUE}/$BARMAN_BACKUP_ID.running ${BASESYNC_QUEUE}/$BARMAN_BACKUP_ID.error
+                fi
+ 
+        else
+ 
+                echo "ERROR: Backup skipped!"
+ 
+        fi
+ 
+ 
+        # output process footer
+cat << EOF
+ 
+Task done.
+ 
+END: $( date )
++-------------------------------------------------------
+ 
+EOF
+ 
+done
+ 
+echo "$( date ) All done."
+exit 0

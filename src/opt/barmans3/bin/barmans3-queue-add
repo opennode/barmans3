@@ -1,0 +1,34 @@
+#!/bin/bash
+ 
+#
+# Adding barman base backup s3 sync task to queue
+# opennodecloud.com 2018
+#
+ 
+CONFFILE="/opt/barmans3/barmans3.conf"
+ 
+# check that CONFFILE exists and source it
+if [ -f $CONFFILE ]; then
+        source $CONFFILE
+else
+        echo "ERROR: CONFFILE ($CONFFILE) does not exist! Aborting."
+        exit 1
+fi
+ 
+# check that BASESYNC_QUEUE dir exists
+if [ ! -d $BASESYNC_QUEUE ]; then
+        echo "ERROR: BASESYNC_QUEUE ($BASESYNC_QUEUE) does not exist! Aborting."
+        exit 1
+fi
+ 
+# create sync task in queue
+cat << EOF > ${BASESYNC_QUEUE}/${BARMAN_BACKUP_ID}.run
+BARMAN_BACKUP_DIR="$BARMAN_BACKUP_DIR"
+BARMAN_BACKUP_ID="$BARMAN_BACKUP_ID"
+BARMAN_ERROR="$BARMAN_ERROR"
+BARMAN_PHASE="$BARMAN_PHASE"
+BARMAN_SERVER="$BARMAN_SERVER"
+BARMAN_STATUS="$BARMAN_STATUS"
+EOF
+ 
+exit 0
