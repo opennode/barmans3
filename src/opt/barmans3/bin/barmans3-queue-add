@@ -14,6 +14,15 @@ else
         echo "ERROR: CONFFILE ($CONFFILE) does not exist! Aborting."
         exit 1
 fi
+
+# add dummy files into empty directories
+# https://github.com/aws/aws-cli/issues/912
+if [ -n "$BARMAN_BACKUP_DIR" ] && [ -d $BARMAN_BACKUP_DIR ]; then
+	cd $BARMAN_BACKUP_DIR
+	find . -type d -empty -exec touch {}/.barmans3 \;
+else
+	echo "ERROR: BARMAN_BACKUP_DIR ($BARMAN_BACKUP_DIR) does not exist! Aborting."
+fi
  
 # check that BASESYNC_QUEUE dir exists
 if [ ! -d $BASESYNC_QUEUE ]; then
