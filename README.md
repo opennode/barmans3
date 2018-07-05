@@ -7,7 +7,9 @@ BarmanS3 consists of 2 separate processes - basebackup sync and WAL archive sync
 
 * /opt/barmans3/bin/barmans3-wal-sync: for syncing server WAL archive from Barman to S3 bucket
 * /opt/barmans3/bin/barmans3-base-sync: for syncing server basebackup (ie full backup) from Barman to S3 bucket
+* /opt/barmans3/bin/barmans3-full-sync: for doing full base & wals sync together with delete (ie cleanup)
 * /opt/barmans3/bin/barmans3-queue-add: barman post-backup hook-script for creating  basebackup sync task in barmans3-base-sync queue
+* /opt/barmans3/bin/barmans3-base-ls: listing basebackups from S3 bucket
 * /opt/barmans3/barmans3.conf: shared config file holding S3 URIs amongst other things
 * /etc/cron.d/barmans3: cron entries for automated barmans3-wal-sync and barmans3-base-sync execution
 
@@ -29,6 +31,7 @@ We assume CentOS 7 Barman host here - althou BarmanS3 scripts should work also w
 Requirements:
 * AWS CLI utility
 * GIT utility
+* rsync utility
 
 ### Satisfying barmans3 dependencies
 
@@ -37,7 +40,7 @@ Requirements:
 yum -y install epel-release
 
 # install awscli and other utilities
-yum -y install awscli git screen
+yum -y install awscli git screen rsync
 ```
 
 ### Deploying BarmanS3
@@ -46,29 +49,7 @@ yum -y install awscli git screen
 # clone barmans3 git repo
 git clone https://github.com/opennode/barmans3.git
 cd barmans3
-
-# deploy barmans3 scripts
-mkdir -p /opt/barmans3/bin
-cp -p src/opt/barmans3/bin/barmans3-wal-sync /opt/barmans3/bin/barmans3-wal-sync
-cp -p src/opt/barmans3/bin/barmans3-base-sync /opt/barmans3/bin/barmans3-base-sync
-cp -p src/opt/barmans3/bin/barmans3-queue-add /opt/barmans3/bin/barmans3-queue-add
-chmod +x /opt/barmans3/bin/*
-
-# copy default barmans3.conf file 
-cp -p src/opt/barmans3/barmans3.conf /opt/barmans3/barmans3.conf
-
-# initialize log files
-mkdir -p /var/log/barmans3
-chmod 750 /var/log/barmans3
-touch /var/log/barmans3/walsync.log
-touch /var/log/barmans3/basesync.log
-chmod 640 /var/log/barmans3/*.log
-chown -R barman:barman /var/log/barmans3
-
-# initialize queue
-mkdir -p /var/run/barmans3/queue.d
-chown -R barman:barman /var/run/barmans3
-chmod -R 750 /var/run/barmans3
+./install.sh
 ```
 
 ## Configuration
