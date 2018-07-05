@@ -1,0 +1,73 @@
+#!/bin/bash
+
+CONFFILE="/opt/barmans3/barmans3.conf"
+SERVER_NAME="$1"
+
+# check if SERVER_NAME param were given
+if [ -z "$SERVER_NAME" ]; then
+	echo "ERROR: SERVER_NAME not given as param! Aborting."
+	exit 1
+fi
+
+# check that CONFFILE exists and source it
+if [ -f $CONFFILE ]; then 
+	source $CONFFILE 
+else 
+	echo "ERROR: CONFFILE ($CONFFILE) does not exist! Aborting."
+	exit 1
+fi
+
+# check that BASE source directory exists
+BASE_SOURCE_PATH="${BARMAN_ROOTPATH}/${SERVER_NAME}/base/"
+if [ ! -d $BASE_SOURCE_PATH ]; then
+	echo "ERROR: BASE_SOURCE_PATH ($BASE_SOURCE_PATH) does not exist! Aborting."
+	exit 1
+fi
+
+# set BASE destination
+BASE_DESTINATION="${S3_BUCKET_URI}/${SERVER_NAME}/base/"
+
+# check that WAL source directory exists
+WAL_SOURCE_PATH="${BARMAN_ROOTPATH}/${SERVER_NAME}/wals/"
+if [ ! -d $WAL_SOURCE_PATH ]; then
+	echo "ERROR: WAL_SOURCE_PATH ($WAL_SOURCE_PATH) does not exist! Aborting."
+	exit 1
+fi
+
+# set WAL destination
+WAL_DESTINATION="${S3_BUCKET_URI}/${SERVER_NAME}/wals/"
+
+# start process header
+cat << EOF
+
++-------------------------------------------------------
+START: $( date )
+
+WHOAMI: $( whoami )
+S3_ENDPOINT_URI: $S3_ENDPOINT_URI
+SERVER_NAME: $SERVER_NAME
+BASE_SOURCE_PATH: $BASE_SOURCE_PATH
+BASE_DESTINATION: $BASE_DESTINATION
+WAL_SOURCE_PATH: $WAL_SOURCE_PATH
+WAL_DESTINATION: $WAL_DESTINATION
+PROXY: $http_proxy $https_proxy
+
+EOF
+
+# execute sync
+echo "Syncing BASE backups"
+/bin/aws --endpoint-url $S3_ENDPOINT_URI s3 sync --delete $BASE_SOURCE_PATH $BASE_DESTINATION
+
+echo "Syncing WALs"
+/bin/aws --endpoint-url $S3_ENDPOINT_URI s3 sync --delete $WAL_SOURCE_PATH $WAL_DESTINATION
+
+# insert process footer
+cat << EOF
+
+All done.
+
+END: $( date )
++-------------------------------------------------------
+
+EOF
+exit 0 
