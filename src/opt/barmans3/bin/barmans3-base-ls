@@ -1,0 +1,25 @@
+#!/bin/bash
+
+CONFFILE="/opt/barmans3/barmans3.conf"
+SERVER_NAME="$1"
+
+# check if SERVER_NAME param were given
+if [ -z "$SERVER_NAME" ]; then
+	echo "ERROR: SERVER_NAME not given as param! Aborting."
+	exit 1
+fi
+
+# check that CONFFILE exists and source it
+if [ -f $CONFFILE ]; then 
+	source $CONFFILE 
+else 
+	echo "ERROR: CONFFILE ($CONFFILE) does not exist! Aborting."
+	exit 1
+fi
+
+# set BASE destination
+BASE_DESTINATION="${S3_BUCKET_URI}/${SERVER_NAME}/base/"
+
+/bin/aws --endpoint-url $S3_ENDPOINT_URI s3 ls $BASE_DESTINATION | tr -d 'PRE /'
+
+exit 0 
