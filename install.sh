@@ -21,6 +21,7 @@ mkdir -p /var/log/barmans3
 chmod 750 /var/log/barmans3
 touch /var/log/barmans3/walsync.log
 touch /var/log/barmans3/basesync.log
+touch /var/log/barmans3/fullsync.log
 chmod 640 /var/log/barmans3/*.log
 chown -R barman:barman /var/log/barmans3
 

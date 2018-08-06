@@ -126,7 +126,7 @@ SHELL=/bin/bash
 # m    h  dom mon dow   user     command
   */15 *    *   *   *   barman   /opt/barmans3/bin/barmans3-wal-sync main-server | sed 's/\o015/\n/g' | grep -v 'file(s) remaining' >> /var/log/barmans3/walsync.log 2>&1
   5    23   *   *   *   barman   /opt/barmans3/bin/barmans3-base-sync | sed 's/\o015/\n/g' | grep -v 'file(s) remaining' >> /var/log/barmans3/basesync.log 2>&1
-  
+  0    3    1   *   *   barman   /opt/barmans3/bin/barmans3-full-sync main-server | sed 's/\o015/\n/g' | grep -v 'file(s) remaining' > /var/log/barmans3/fullsync.log 2>&1
 EOF
  
 # reload crond 
